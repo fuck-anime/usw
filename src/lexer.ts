@@ -1213,7 +1213,7 @@ export class Lexer {
         // Byte escape:
         if (b === C.LOWERCASE_X && Ascii.is.hexadecimal(c) && Ascii.is.hexadecimal(d)) {
             const escape = new Lexical.Escape({
-                codepoint: parseInt(Ascii.show[c] + Ascii.show[d], 16),
+                codepoint: parseInt(Ascii.decode(c) + Ascii.decode(d), 16),
             });
 
             this.advance(escape);
@@ -1225,7 +1225,7 @@ export class Lexer {
         // BMP codepoint escape:
         if (b === C.LOWERCASE_U && Ascii.is.hexadecimal(c) && Ascii.is.hexadecimal(d) && Ascii.is.hexadecimal(e) && Ascii.is.hexadecimal(f)) {
             const escape = new Lexical.Escape({
-                codepoint: parseInt(Ascii.show[c] + Ascii.show[d] + Ascii.show[e] + Ascii.show[f], 16),
+                codepoint: parseInt(Ascii.decode(c) + Ascii.decode(d) + Ascii.decode(e) + Ascii.decode(f), 16),
             });
 
             this.advance(escape);
