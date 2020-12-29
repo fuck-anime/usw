@@ -682,67 +682,67 @@ export namespace Ascii {
     }
 
     export namespace is {
-        export const control = (x: number) => {
+        export const control = (x: number): boolean => {
             return (x >= Control.NULL && x <= Control.BACKSPACE) || x === Control.VERTICAL_TAB || (x >= Control.SO && x <= Control.US) || x === Control.DELETE;
         };
 
-        export const whitespace = (x: number) => {
+        export const whitespace = (x: number): boolean => {
             return x === Whitespace.WHITESPACE || x === Whitespace.HORIZONTAL_TAB;
         };
 
-        export const newline = (x: number) => {
+        export const newline = (x: number): boolean => {
             return x === Newline.LINE_FEED || x === Newline.CARRIAGE_RETURN || x === Newline.FORM_FEED;
         };
 
-        export const blank = (x: number) => {
+        export const blank = (x: number): boolean => {
             return whitespace(x) || newline(x);
         };
 
-        export const decimal = (x: number) => {
+        export const decimal = (x: number): boolean => {
             return x >= Decimal.DECIMAL_0 && x <= Decimal.DECIMAL_9;
         };
 
-        export const uppercase = (x: number) => {
+        export const uppercase = (x: number): boolean => {
             return x >= Uppercase.UPPERCASE_A && x <= Uppercase.UPPERCASE_Z;
         };
 
-        export const lowercase = (x: number) => {
+        export const lowercase = (x: number): boolean => {
             return x >= Lowercase.LOWERCASE_A && x <= Lowercase.LOWERCASE_Z;
         };
 
-        export const letter = (x: number) => {
+        export const letter = (x: number): boolean => {
             return lowercase(x | 0x20);
         };
 
-        export const alphanumeric = (x: number) => {
+        export const alphanumeric = (x: number): boolean => {
             return decimal(x) || letter(x);
         };
 
-        export const ids = (x: number) => {
+        export const ids = (x: number): boolean => {
             return letter(x) || x === Ids.HYPHEN || x === Ids.UNDERSCORE || x > 127;
         };
 
-        export const idc = (x: number) => {
+        export const idc = (x: number): boolean => {
             return ids(x) || decimal(x);
         };
 
-        export const binary = (x: number) => {
+        export const binary = (x: number): boolean => {
             return x === Binary.DECIMAL_0 || x === Binary.DECIMAL_1;
         };
 
-        export const octal = (x: number) => {
+        export const octal = (x: number): boolean => {
             return x >= Octal.DECIMAL_0 && x <= Octal.DECIMAL_7;
         };
 
-        export const hexadecimal = (x: number) => {
+        export const hexadecimal = (x: number): boolean => {
             return decimal(x) || ((x | 0x20) >= Hexadecimal.LOWERCASE_A && (x | 0x20) <= Hexadecimal.LOWERCASE_F);
         };
 
-        export const separator = (x: number) => {
+        export const separator = (x: number): boolean => {
             return x === Separator.COMMA || x === Separator.SEMICOLON;
         };
 
-        export const operator = (x: number) => {
+        export const operator = (x: number): boolean => {
             switch (x) {
                 case Operator.EXCLAMATION:
                 case Operator.HASH:
@@ -772,35 +772,35 @@ export namespace Ascii {
             }
         };
 
-        export const escape = (x: number) => {
+        export const escape = (x: number): boolean => {
             return x === Escape.BACKSLASH;
         };
 
-        export const quote = (x: number) => {
+        export const quote = (x: number): boolean => {
             return x === Quote.DOUBLE_QUOTE || x === Quote.SINGLE_QUOTE;
         };
 
-        export const extquote = (x: number) => {
+        export const extquote = (x: number): boolean => {
             return quote(x) || x === Extquote.BACKTICK;
         };
 
-        export const begin = (x: number) => {
+        export const begin = (x: number): boolean => {
             return x === Begin.PARENTHESIS_L || x === Begin.BRACKET_L || x === Begin.BRACE_L;
         };
 
-        export const end = (x: number) => {
+        export const end = (x: number): boolean => {
             return x === End.PARENTHESIS_R || x === End.BRACKET_R || x === End.BRACE_R;
         };
 
-        export const group = (x: number) => {
+        export const group = (x: number): boolean => {
             return begin(x) || end(x);
         };
 
-        export const sign = (x: number) => {
+        export const sign = (x: number): boolean => {
             return x === Sign.HYPHEN || x === Sign.PLUS;
         };
 
-        export const complement = (x: Group, y: Group) => {
+        export const complement = (x: Group, y: Group): boolean => {
             switch (x) {
                 case Group.PARENTHESIS_L:
                     return y === Group.PARENTHESIS_R;
@@ -821,67 +821,67 @@ export namespace Ascii {
     }
 
     export namespace not {
-        export const control = (x: number) => {
+        export const control = (x: number): boolean => {
             return (x < Control.NULL || x > Control.BACKSPACE) && x !== Control.VERTICAL_TAB && (x < Control.SO || x > Control.US) && x !== Control.DELETE;
         };
 
-        export const whitespace = (x: number) => {
+        export const whitespace = (x: number): boolean => {
             return x !== Whitespace.WHITESPACE && x !== Whitespace.HORIZONTAL_TAB;
         };
 
-        export const newline = (x: number) => {
+        export const newline = (x: number): boolean => {
             return x !== Newline.LINE_FEED && x !== Newline.CARRIAGE_RETURN && x !== Newline.FORM_FEED;
         };
 
-        export const blank = (x: number) => {
+        export const blank = (x: number): boolean => {
             return whitespace(x) && newline(x);
         };
 
-        export const decimal = (x: number) => {
+        export const decimal = (x: number): boolean => {
             return x < Decimal.DECIMAL_0 || x > Decimal.DECIMAL_9;
         };
 
-        export const uppercase = (x: number) => {
+        export const uppercase = (x: number): boolean => {
             return x < Uppercase.UPPERCASE_A || x > Uppercase.UPPERCASE_Z;
         };
 
-        export const lowercase = (x: number) => {
+        export const lowercase = (x: number): boolean => {
             return x < Lowercase.LOWERCASE_A || x > Lowercase.LOWERCASE_Z;
         };
 
-        export const letter = (x: number) => {
+        export const letter = (x: number): boolean => {
             return lowercase(x | 0x20);
         };
 
-        export const alphanumeric = (x: number) => {
+        export const alphanumeric = (x: number): boolean => {
             return decimal(x) && letter(x);
         };
 
-        export const ids = (x: number) => {
+        export const ids = (x: number): boolean => {
             return letter(x) && x !== Ids.HYPHEN && x !== Ids.UNDERSCORE && x <= 127;
         };
 
-        export const idc = (x: number) => {
+        export const idc = (x: number): boolean => {
             return ids(x) && decimal(x);
         };
 
-        export const binary = (x: number) => {
+        export const binary = (x: number): boolean => {
             return x !== Binary.DECIMAL_0 && x !== Binary.DECIMAL_1;
         };
 
-        export const octal = (x: number) => {
+        export const octal = (x: number): boolean => {
             return x < Octal.DECIMAL_0 || x > Octal.DECIMAL_7;
         };
 
-        export const hexadecimal = (x: number) => {
+        export const hexadecimal = (x: number): boolean => {
             return decimal(x) && ((x | 0x20) < Hexadecimal.LOWERCASE_A || (x | 0x20) > Hexadecimal.LOWERCASE_F);
         };
 
-        export const separator = (x: number) => {
+        export const separator = (x: number): boolean => {
             return x !== Separator.COMMA && x !== Separator.SEMICOLON;
         };
 
-        export const operator = (x: number) => {
+        export const operator = (x: number): boolean => {
             switch (x) {
                 case Operator.EXCLAMATION:
                 case Operator.HASH:
@@ -911,35 +911,35 @@ export namespace Ascii {
             }
         };
 
-        export const escape = (x: number) => {
+        export const escape = (x: number): boolean => {
             return x !== Escape.BACKSLASH;
         };
 
-        export const quote = (x: number) => {
+        export const quote = (x: number): boolean => {
             return x !== Quote.DOUBLE_QUOTE && x !== Quote.SINGLE_QUOTE;
         };
 
-        export const extquote = (x: number) => {
+        export const extquote = (x: number): boolean => {
             return quote(x) && x !== Extquote.BACKTICK;
         };
 
-        export const begin = (x: number) => {
+        export const begin = (x: number): boolean => {
             return x !== Begin.PARENTHESIS_L && x !== Begin.BRACKET_L && x !== Begin.BRACE_L;
         };
 
-        export const end = (x: number) => {
+        export const end = (x: number): boolean => {
             return x !== End.PARENTHESIS_R && x !== End.BRACKET_R && x !== End.BRACE_R;
         };
 
-        export const group = (x: number) => {
+        export const group = (x: number): boolean => {
             return begin(x) && end(x);
         };
 
-        export const sign = (x: number) => {
+        export const sign = (x: number): boolean => {
             return x !== Sign.HYPHEN && x !== Sign.PLUS;
         };
 
-        export const complement = (x: Group, y: Group) => {
+        export const complement = (x: Group, y: Group): boolean => {
             switch (x) {
                 case Group.PARENTHESIS_L:
                     return y !== Group.PARENTHESIS_R;
@@ -991,7 +991,7 @@ export namespace Ascii {
     };
 
     export namespace parse {
-        export const digit = (x: Hexadecimal) => {
+        export const digit = (x: Hexadecimal): number => {
             const y = x & 0xf;
 
             if (x > Hexadecimal.DECIMAL_9) {

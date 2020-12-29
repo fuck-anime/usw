@@ -176,11 +176,11 @@ export class Lexer {
         this.stop.absolute.byte += n;
     }
 
-    protected lookahead(n: number) {
+    protected lookahead(n: number): number {
         return this.input[this.cursor + n] ?? -1;
     }
 
-    protected match(pattern: readonly number[], n: number) {
+    protected match(pattern: readonly number[], n: number): boolean {
         let length = pattern.length;
         let index = 0;
         let offset = this.cursor + n;
@@ -224,7 +224,7 @@ export class Lexer {
         this.advance(parent, parent.span?.begin); // Push the production to the new stack queue.
     }
 
-    protected crlf(n: number) {
+    protected crlf(n: number): boolean {
         const a = this.lookahead(n);
         const b = this.lookahead(n + 1);
 
@@ -234,7 +234,7 @@ export class Lexer {
 
     // region Readers
     // region Root readers
-    protected readNode() {
+    protected readNode(): boolean {
         const context = this.frame.context;
 
         if (context & Lexer.Context.Mask.Group) {
@@ -340,12 +340,12 @@ export class Lexer {
         }
     }
 
-    protected readRoot() {
+    protected parseInput(): Lexical.Branch {
         while (this.cursor < this.length) {
             this.readNode();
         }
 
-        this.readEof();
+        this.handleEof();
 
         this.advance(null);
 
@@ -358,7 +358,7 @@ export class Lexer {
         return parent;
     }
 
-    protected readEof() {
+    protected handleEof() {
         while (this.stack.length) {
             const context = this.frame.context;
 
@@ -379,7 +379,7 @@ export class Lexer {
     /**
      * Read group begin: `/[([{]/`.
      */
-    protected readGroupOpening() {
+    protected readGroupOpening(): boolean {
         const a = this.lookahead(0);
 
         if (Ascii.not.begin(a)) return false;
@@ -398,7 +398,7 @@ export class Lexer {
     /**
      * Read group end: `/[)\]}]/`.
      */
-    protected readGroupEnding() {
+    protected readGroupEnding(): boolean {
         const a = this.lookahead(0);
 
         if (Ascii.not.end(a)) return false;
@@ -431,7 +431,7 @@ export class Lexer {
     /**
      * Read quoted literal begin: ``/["'`]/``.
      */
-    protected readQuotedOpening() {
+    protected readQuotedOpening(): boolean {
         const a = this.lookahead(0);
 
         if (Ascii.not.extquote(a) || (!this.extstrings && a === C.BACKTICK)) return false;
@@ -450,7 +450,7 @@ export class Lexer {
     /**
      * Read quoted literal end: ``/["'`]|\r\n|\r|\n|\f/``.
      */
-    protected readQuotedEnding() {
+    protected readQuotedEnding(): boolean {
         const a = this.lookahead(0);
 
         let mismatch = true;
@@ -485,7 +485,7 @@ export class Lexer {
     /**
      * Read URL begin: `/url\(/i`
      */
-    protected readUrlOpening() {
+    protected readUrlOpening(): boolean {
         const a = this.lookahead(0);
         const b = this.lookahead(1);
         const c = this.lookahead(2);
@@ -509,7 +509,7 @@ export class Lexer {
     /**
      * Read URL end: `/\)/`.
      */
-    protected readUrlEnding() {
+    protected readUrlEnding(): boolean {
         const a = this.lookahead(0);
 
         if (a !== C.PARENTHESIS_R) return false;
@@ -523,7 +523,7 @@ export class Lexer {
     /**
      * Read comment begin only if it’s followed by a whitespace.
      */
-    protected readUrlComment() {
+    protected readUrlComment(): boolean {
         let mismatch = true;
 
         const a = this.lookahead(0);
@@ -546,7 +546,7 @@ export class Lexer {
     /**
      * Read block comment begin: `/\/*‍/`.
      */
-    protected readCommentBlockOpening() {
+    protected readCommentBlockOpening(): boolean {
         const a = this.lookahead(0);
         const b = this.lookahead(1);
 
@@ -569,7 +569,7 @@ export class Lexer {
     /**
      * Read line comment begin: `/\/{2}/`.
      */
-    protected readCommentLineOpening() {
+    protected readCommentLineOpening(): boolean {
         const a = this.lookahead(0);
         const b = this.lookahead(1);
 
@@ -590,7 +590,7 @@ export class Lexer {
     /**
      * Read block comment end: /*\//.
      */
-    protected readCommentBlockEnding() {
+    protected readCommentBlockEnding(): boolean {
         const a = this.lookahead(0);
         const b = this.lookahead(1);
 
@@ -605,7 +605,7 @@ export class Lexer {
     /**
      * Read line comment end: /\r\n|\r|\n|\f/.
      */
-    protected readCommentLineEnding() {
+    protected readCommentLineEnding(): boolean {
         const a = this.lookahead(0);
 
         if (Ascii.not.newline(a)) return false;
@@ -622,13 +622,13 @@ export class Lexer {
         return true;
     }
 
-    protected readCommentOpening() {
+    protected readCommentOpening(): boolean {
         return this.readCommentBlockOpening() || this.readCommentLineOpening();
     }
     // endregion
 
     // region Quasi readers
-    protected readQuasiOpening() {
+    protected readQuasiOpening(): boolean {
         let syntax = null as Lexical.Quasi.Syntax | null;
 
         for (const definition of this.quasidefs[this.frame.context]) {
@@ -649,7 +649,7 @@ export class Lexer {
         return true;
     }
 
-    protected readQuasiEnding() {
+    protected readQuasiEnding(): boolean {
         if (this.frame.focus?.type !== T.Group) return false;
 
         this.pop();
@@ -659,7 +659,7 @@ export class Lexer {
     // endregion
 
     // region Annotation readers
-    protected readAnnotationOpening() {
+    protected readAnnotationOpening(): boolean {
         let syntax = null as Lexical.Annotation.Syntax | null;
         let placement = null as Lexical.Annotation.Placement | null;
 
@@ -683,7 +683,7 @@ export class Lexer {
         return true;
     }
 
-    protected readAnnotationEnding() {
+    protected readAnnotationEnding(): boolean {
         if (this.frame.focus?.type !== T.Group) return false;
 
         this.pop();
@@ -699,7 +699,7 @@ export class Lexer {
      * either the `/\p{IDS}/` character, or a backslash followed by neither
      * newline nor EOF, where `/\p{IDS}/` is `/[a-z_-]/i` or non-ASCII.
      */
-    protected readIdentifierOpening() {
+    protected readIdentifierOpening(): boolean {
         const a = this.lookahead(0);
         const b = this.lookahead(1);
         const c = this.lookahead(2);
@@ -739,7 +739,7 @@ export class Lexer {
     /**
      * Actually does not read anything — just switches the stackframe.
      */
-    protected readIdentifierEnding() {
+    protected readIdentifierEnding(): boolean {
         this.pop();
 
         return true;
@@ -753,7 +753,7 @@ export class Lexer {
      * where `/\p{IDC}/` is `/[0-9a-z_-]/i` or non-ASCII, `/\p{NL}/` is
      * `/[\r\n\f]/`, `\p{EOF}` is the end of file.
      */
-    protected readHashOpening() {
+    protected readHashOpening(): boolean {
         const a = this.lookahead(0);
         const b = this.lookahead(1);
         const c = this.lookahead(2);
@@ -803,7 +803,7 @@ export class Lexer {
      * Actually does not read anything — just triggered when neither IDC nor
      * escape was read, and switches the context.
      */
-    protected readHashEnding() {
+    protected readHashEnding(): boolean {
         this.closeHash();
 
         return true;
@@ -835,7 +835,7 @@ export class Lexer {
      * -   `/[+-]?0o[0-7]+(_[0-7]+)*_{0,2}/i`,
      * -   `/[+-]?0x[0-9a-f]+(_[0-9a-f]+)*_{0,2}/i`.
      */
-    protected readNumericExtended(base: 2 | 8 | 16, letter: C, is: (x: number) => boolean) {
+    protected readNumericExtended(base: 2 | 8 | 16, letter: C, is: (x: number) => boolean): boolean {
         if (!this.extnumbers) return false;
 
         let mismatch = true;
@@ -908,21 +908,21 @@ export class Lexer {
     /**
      * Read a binary literal: `/[+-]?0b[01]+(_[01]+)*_{0,2}/`.
      */
-    protected readNumericBinary() {
+    protected readNumericBinary(): boolean {
         return this.readNumericExtended(2, C.LOWERCASE_B, Ascii.is.binary);
     }
 
     /**
      * Read an octal literal: `/[+-]?0o[0-7]+(_[0-7]+)*_{0,2}/`.
      */
-    protected readNumericOctal() {
+    protected readNumericOctal(): boolean {
         return this.readNumericExtended(8, C.LOWERCASE_O, Ascii.is.octal);
     }
 
     /**
      * Read a hexadecimal literal: `/[+-]?0x[\da-f]+(_[\da-f]+)*_{0,2}/i`.
      */
-    protected readNumericHexadecimal() {
+    protected readNumericHexadecimal(): boolean {
         return this.readNumericExtended(16, C.LOWERCASE_X, Ascii.is.hexadecimal);
     }
 
@@ -932,7 +932,7 @@ export class Lexer {
      * -   `/[+-]?\d+(_\d+)*(\.(\d+(_\d+)*)?)?(e[+-]?\d+(_\d+)*)?_{0,2}/i`,
      * -   `/[+-]?\.\d+(_\d+)*(e[+-]?\d+(_\d+)*)?_{0,2}/i`.
      */
-    protected readNumericDecimal() {
+    protected readNumericDecimal(): boolean {
         const append = (symbol: number) => {
             if (scientific) {
                 exponent.push(symbol);
@@ -1058,7 +1058,7 @@ export class Lexer {
     /**
      * Read any numeric literal.
      */
-    protected readNumeric() {
+    protected readNumeric(): boolean {
         return this.readNumericBinary() || this.readNumericOctal() || this.readNumericHexadecimal() || this.readNumericDecimal();
     }
     // endregion
@@ -1067,7 +1067,7 @@ export class Lexer {
     /**
      * Read a separator.
      */
-    protected readSeparator() {
+    protected readSeparator(): boolean {
         const a = this.lookahead(0);
 
         if (Ascii.not.separator(a)) return false;
@@ -1087,7 +1087,7 @@ export class Lexer {
     /**
      * Read an operator.
      */
-    protected readOperator() {
+    protected readOperator(): boolean {
         const a = this.lookahead(0);
 
         if (Ascii.not.operator(a)) return false;
@@ -1107,7 +1107,7 @@ export class Lexer {
     /**
      * Read a whitespace: `/[ \t\r\n\f]+/`.
      */
-    protected readBlank() {
+    protected readBlank(): boolean {
         const a = this.lookahead(0);
 
         if (Ascii.not.blank(a)) return false;
@@ -1131,7 +1131,7 @@ export class Lexer {
     // endregion
 
     // region CDX readers
-    protected readCdo() {
+    protected readCdo(): boolean {
         const a = this.lookahead(0);
         const b = this.lookahead(1);
         const c = this.lookahead(2);
@@ -1145,7 +1145,7 @@ export class Lexer {
         return true;
     }
 
-    protected readCdc() {
+    protected readCdc(): boolean {
         const a = this.lookahead(0);
         const b = this.lookahead(1);
         const c = this.lookahead(2);
@@ -1158,7 +1158,7 @@ export class Lexer {
         return true;
     }
 
-    protected readCdx() {
+    protected readCdx(): boolean {
         if (!this.stdcdx) return false;
 
         return this.readCdo() || this.readCdc();
@@ -1169,7 +1169,7 @@ export class Lexer {
     /**
      * Read characters not consumed by other readers: `/./`.
      */
-    protected readUnexpected() {
+    protected readUnexpected(): boolean {
         if (!this.frame.focus || this.frame.focus.type !== T.Unexpected) this.advance(new Lexical.Unexpected());
 
         this.consume(1);
@@ -1188,7 +1188,7 @@ export class Lexer {
      * -   Literal digit: `/\\d\d/`.
      * -   Special: `/\\[0abefnrtv]/`.
      */
-    protected readEscapeExtended() {
+    protected readEscapeExtended(): boolean {
         const a = this.lookahead(0);
         const b = this.lookahead(1);
         const c = this.lookahead(2);
@@ -1262,7 +1262,7 @@ export class Lexer {
                 offset++;
                 cursor++;
 
-                focus = this.input[cursor];
+                focus = this.input[cursor] ?? -1;
             }
 
             if (focus === C.BRACE_R) {
@@ -1284,7 +1284,7 @@ export class Lexer {
     /**
      * Read a standard hexadecimal CSS escape.
      */
-    protected readEscapeStandard() {
+    protected readEscapeStandard(): boolean {
         const a = this.lookahead(0);
         const b = this.lookahead(1);
 
@@ -1303,7 +1303,7 @@ export class Lexer {
             offset++;
             cursor++;
 
-            focus = this.input[cursor];
+            focus = this.input[cursor] ?? -1;
         }
 
         if (this.crlf(offset)) {
@@ -1322,7 +1322,7 @@ export class Lexer {
      * Read a literal escape: `/\\./u`, where `.` is any codepoint except a
      * newline.
      */
-    protected readEscapeLiteral() {
+    protected readEscapeLiteral(): boolean {
         const a = this.lookahead(0);
         const b = this.lookahead(1);
 
@@ -1343,7 +1343,7 @@ export class Lexer {
     /**
      * Read any escape sequence.
      */
-    protected readEscapeRegular() {
+    protected readEscapeRegular(): boolean {
         // TODO: Replace zero (?) and invalid codepoints with the replacement character.
         return this.readEscapeExtended() || this.readEscapeStandard() || this.readEscapeLiteral();
     }
@@ -1351,7 +1351,7 @@ export class Lexer {
     /**
      * Read an escaped newline or EOF: `/\\(\r\n|\r|\n|\f|$)/`.
      */
-    protected readEscapeNewline() {
+    protected readEscapeNewline(): boolean {
         const a = this.lookahead(0);
         const b = this.lookahead(1);
 
@@ -1380,7 +1380,7 @@ export class Lexer {
     /**
      * Read anything not consumed by other readers.
      */
-    protected readLiteralRaw() {
+    protected readLiteralRaw(): boolean {
         if (!this.frame.focus || this.frame.focus.type !== T.Raw) {
             this.advance(new Lexical.Raw());
         }
@@ -1395,7 +1395,7 @@ export class Lexer {
     /**
      * Read an IDC: `/\p{IDC}+/`, where `/\p{IDC}/` is `/[\w-]/` and non-ASCII.
      */
-    protected readIdentifierRaw() {
+    protected readIdentifierRaw(): boolean {
         const a = this.lookahead(0);
 
         if (Ascii.not.idc(a)) return false;
@@ -1420,7 +1420,7 @@ export class Lexer {
     /**
      * Read an IDC: `/\p{IDC}+/`, where `/\p{IDC}/` is `/[\w-]/` and non-ASCII.
      */
-    protected readHashRaw() {
+    protected readHashRaw(): boolean {
         const a = this.lookahead(0);
 
         if (Ascii.not.idc(a)) return false;
@@ -1455,10 +1455,10 @@ export class Lexer {
     // endregion
 
     // region Public API
-    tokenize(input = {} as Lexer.Input) {
+    tokenize(input = {} as Lexer.Input): Lexical.Branch {
         this.setup(input);
 
-        return this.readRoot();
+        return this.parseInput();
     }
     // endregion
 }

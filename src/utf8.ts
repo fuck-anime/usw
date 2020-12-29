@@ -14,7 +14,7 @@ export namespace Utf8 {
      * Returns an expected byte length of the codepoint starting with the
      * specified byte. Expects a valid UTF-8 input.
      */
-    export const length = (byte: number) => {
+    export const length = (byte: number): number => {
         if ((byte & 0b11111_000) === 0b11110_000) {
             return 4;
         } else if ((byte & 0b1111_0000) === 0b1110_0000) {
@@ -30,7 +30,7 @@ export namespace Utf8 {
      * Returns a value of the codepoint at the specified offset. Expects a
      * valid UTF-8 input.
      */
-    export const value = (input: Uint8Array, offset: number) => {
+    export const value = (input: Uint8Array, offset: number): number => {
         const b1 = input[offset] ?? 0;
 
         switch (length(b1)) {
