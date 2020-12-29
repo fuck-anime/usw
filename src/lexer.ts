@@ -2,10 +2,16 @@ import { Ascii } from './ascii';
 import { Lexical } from './lexical';
 import { Span } from './span';
 import { Utf8 } from './utf8';
+
 import B = Ascii.Begin;
 import C = Ascii.Code;
 import Q = Ascii.Extquote;
 import T = Lexical.Type;
+
+import is = Ascii.is;
+import not = Ascii.not;
+import decode = Ascii.decode;
+import parse = Ascii.parse;
 
 export class Lexer {
     // region Options
@@ -161,7 +167,7 @@ export class Lexer {
                 this.stop.absolute.codepoint++;
             }
 
-            if (Ascii.is.newline(a)) {
+            if (is.newline(a)) {
                 if (!this.crlf(0)) {
                     this.stop.line++;
                     this.stop.relative.byte = 0;
@@ -326,7 +332,7 @@ export class Lexer {
                 const hash = this.frame.parent as Lexical.Hash;
                 const a = node.codepoint!;
 
-                if (Ascii.is.hexadecimal(a)) {
+                if (is.hexadecimal(a)) {
                     hash.bytes.push(a);
                 } else {
                     hash.color = Lexical.Hash.ColorValidity.Invalid;
@@ -382,7 +388,7 @@ export class Lexer {
     protected readGroupOpening(): boolean {
         const a = this.lookahead(0);
 
-        if (Ascii.not.begin(a)) return false;
+        if (not.begin(a)) return false;
 
         const group = new Lexical.Group({
             begin: a,
@@ -401,7 +407,7 @@ export class Lexer {
     protected readGroupEnding(): boolean {
         const a = this.lookahead(0);
 
-        if (Ascii.not.end(a)) return false;
+        if (not.end(a)) return false;
 
         if ((this.frame.parent as Lexical.Group).end !== a) {
             // TODO:
@@ -434,7 +440,7 @@ export class Lexer {
     protected readQuotedOpening(): boolean {
         const a = this.lookahead(0);
 
-        if (Ascii.not.extquote(a) || (!this.extstrings && a === C.BACKTICK)) return false;
+        if (not.extquote(a) || (!this.extstrings && a === C.BACKTICK)) return false;
 
         const quoted = new Lexical.Quoted({
             quote: a,
@@ -459,7 +465,7 @@ export class Lexer {
 
         if (a === (this.frame.parent as Lexical.Quoted).quote) {
             mismatch = false;
-        } else if (!this.extstrings && Ascii.is.newline(a)) {
+        } else if (!this.extstrings && is.newline(a)) {
             // TODO: Emit error.
 
             mismatch = false;
@@ -536,7 +542,7 @@ export class Lexer {
             mismatch = false;
         }
 
-        if (mismatch || Ascii.not.blank(c)) return false;
+        if (mismatch || not.blank(c)) return false;
 
         return this.readCommentOpening();
     }
@@ -608,7 +614,7 @@ export class Lexer {
     protected readCommentLineEnding(): boolean {
         const a = this.lookahead(0);
 
-        if (Ascii.not.newline(a)) return false;
+        if (not.newline(a)) return false;
 
         let consume = 1;
 
@@ -706,14 +712,14 @@ export class Lexer {
 
         let mismatch = true;
 
-        if (Ascii.is.ids(a)) {
+        if (is.ids(a)) {
             // ^\p{IDS}
             if (a === C.HYPHEN) {
                 // ^-
-                if (Ascii.is.idc(b)) {
+                if (is.idc(b)) {
                     // ^-\p{IDC}
                     mismatch = false;
-                } else if (b === C.BACKSLASH && Ascii.not.newline(c) && c !== -1) {
+                } else if (b === C.BACKSLASH && not.newline(c) && c !== -1) {
                     // Hyphen, then backslash followed by anything except NL/EOF.
                     // ^-\\(?!=\r|\n|\f|$)
                     mismatch = false;
@@ -721,7 +727,7 @@ export class Lexer {
             } else {
                 mismatch = false;
             }
-        } else if (a === C.BACKSLASH && Ascii.not.newline(b) && b !== -1) {
+        } else if (a === C.BACKSLASH && not.newline(b) && b !== -1) {
             // Backslash followed by anything except NL/EOF.
             // ^\\(?!=\r|\n|\f|$)
             mismatch = false;
@@ -764,23 +770,23 @@ export class Lexer {
         let id = false;
         let color = Lexical.Hash.ColorValidity.Unknown;
 
-        if (Ascii.is.ids(b)) {
+        if (is.ids(b)) {
             // IDS character:
             // ^\p{IDS}
             mismatch = false;
             id = true;
-        } else if (Ascii.is.idc(b)) {
+        } else if (is.idc(b)) {
             // IDC character:
             // ^\p{IDC}
             mismatch = false;
-        } else if (b === C.BACKSLASH && Ascii.not.newline(c) && c !== -1) {
+        } else if (b === C.BACKSLASH && not.newline(c) && c !== -1) {
             // Escape:
             // ^\\[^\p{NL}\p{EOF}]
             mismatch = false;
             id = true;
         }
 
-        if (Ascii.is.idc(b) && Ascii.not.hexadecimal(b)) {
+        if (is.idc(b) && not.hexadecimal(b)) {
             color = Lexical.Hash.ColorValidity.Invalid;
         }
 
@@ -835,7 +841,7 @@ export class Lexer {
      * -   `/[+-]?0o[0-7]+(_[0-7]+)*_{0,2}/i`,
      * -   `/[+-]?0x[0-9a-f]+(_[0-9a-f]+)*_{0,2}/i`.
      */
-    protected readNumericExtended(base: 2 | 8 | 16, letter: C, is: (x: number) => boolean): boolean {
+    protected readNumericExtended(base: 2 | 8 | 16, letter: C, f: (x: number) => boolean): boolean {
         if (!this.extnumbers) return false;
 
         let mismatch = true;
@@ -848,11 +854,11 @@ export class Lexer {
         const c = this.lookahead(2);
         const d = this.lookahead(3);
 
-        if (a === C.DECIMAL_0 && (b | 0x20) === letter && is(c)) {
+        if (a === C.DECIMAL_0 && (b | 0x20) === letter && f(c)) {
             // ^0b(?=\d)
             mismatch = false;
             consume = 2;
-        } else if (Ascii.is.sign(a) && b === C.DECIMAL_0 && (c | 0x20) === letter && is(d)) {
+        } else if (is.sign(a) && b === C.DECIMAL_0 && (c | 0x20) === letter && f(d)) {
             // ^[+-]0b(?=\d)
             mismatch = false;
             intnegative = a === C.HYPHEN;
@@ -872,12 +878,12 @@ export class Lexer {
             const a = this.lookahead(0);
             const b = this.lookahead(1);
 
-            if (is(a)) {
+            if (f(a)) {
                 // Digit:
                 // ^\d
                 integer.push(a);
                 this.consume(1);
-            } else if (a === C.UNDERSCORE && is(b)) {
+            } else if (a === C.UNDERSCORE && f(b)) {
                 // Separator followed by a digit:
                 // ^_\d
                 integer.push(b);
@@ -909,21 +915,21 @@ export class Lexer {
      * Read a binary literal: `/[+-]?0b[01]+(_[01]+)*_{0,2}/`.
      */
     protected readNumericBinary(): boolean {
-        return this.readNumericExtended(2, C.LOWERCASE_B, Ascii.is.binary);
+        return this.readNumericExtended(2, C.LOWERCASE_B, is.binary);
     }
 
     /**
      * Read an octal literal: `/[+-]?0o[0-7]+(_[0-7]+)*_{0,2}/`.
      */
     protected readNumericOctal(): boolean {
-        return this.readNumericExtended(8, C.LOWERCASE_O, Ascii.is.octal);
+        return this.readNumericExtended(8, C.LOWERCASE_O, is.octal);
     }
 
     /**
      * Read a hexadecimal literal: `/[+-]?0x[\da-f]+(_[\da-f]+)*_{0,2}/i`.
      */
     protected readNumericHexadecimal(): boolean {
-        return this.readNumericExtended(16, C.LOWERCASE_X, Ascii.is.hexadecimal);
+        return this.readNumericExtended(16, C.LOWERCASE_X, is.hexadecimal);
     }
 
     /**
@@ -955,20 +961,20 @@ export class Lexer {
         const b = this.lookahead(1);
         const c = this.lookahead(2);
 
-        if (Ascii.is.decimal(a)) {
+        if (is.decimal(a)) {
             // ^(?=\d)
             mismatch = false;
-        } else if (a === C.DOT && Ascii.is.decimal(b)) {
+        } else if (a === C.DOT && is.decimal(b)) {
             // ^.(?=\d)
             mismatch = false;
             real = true;
             consume = 1;
-        } else if (Ascii.is.sign(a) && Ascii.is.decimal(b)) {
+        } else if (is.sign(a) && is.decimal(b)) {
             // ^[+-](?=\d)
             mismatch = false;
             intnegative = a === C.HYPHEN;
             consume = 1;
-        } else if (Ascii.is.sign(a) && b === C.DOT && Ascii.is.decimal(c)) {
+        } else if (is.sign(a) && b === C.DOT && is.decimal(c)) {
             // ^[+-].(?=\d)
             mismatch = false;
             intnegative = a === C.HYPHEN;
@@ -992,17 +998,17 @@ export class Lexer {
             const b = this.lookahead(1);
             const c = this.lookahead(2);
 
-            if (Ascii.is.decimal(a)) {
+            if (is.decimal(a)) {
                 // Digit:
                 // ^\d
                 append(a);
                 this.consume(1);
-            } else if (this.extnumbers && a === C.UNDERSCORE && Ascii.is.decimal(b)) {
+            } else if (this.extnumbers && a === C.UNDERSCORE && is.decimal(b)) {
                 // Separator followed by a digit:
                 // ^_\d
                 append(b);
                 this.consume(2);
-            } else if (!real && a === C.DOT && Ascii.is.decimal(b)) {
+            } else if (!real && a === C.DOT && is.decimal(b)) {
                 // Dot followed by a digit:
                 // ^.\d
                 real = true;
@@ -1013,14 +1019,14 @@ export class Lexer {
                 // ^.
                 real = true;
                 this.consume(1);
-            } else if (!scientific && (a | 0x20) === C.LOWERCASE_E && Ascii.is.decimal(b)) {
+            } else if (!scientific && (a | 0x20) === C.LOWERCASE_E && is.decimal(b)) {
                 // Exponent letter followed by a digit:
                 // ^e\d
                 real = true;
                 scientific = true;
                 append(b);
                 this.consume(2);
-            } else if (!scientific && (a | 0x20) === C.LOWERCASE_E && Ascii.is.sign(b) && Ascii.is.decimal(c)) {
+            } else if (!scientific && (a | 0x20) === C.LOWERCASE_E && is.sign(b) && is.decimal(c)) {
                 // Exponent letter followed by a sign and a digit:
                 // ^e[+-]\d
                 real = true;
@@ -1070,7 +1076,7 @@ export class Lexer {
     protected readSeparator(): boolean {
         const a = this.lookahead(0);
 
-        if (Ascii.not.separator(a)) return false;
+        if (not.separator(a)) return false;
 
         const separator = new Lexical.Separator({
             separator: a,
@@ -1090,7 +1096,7 @@ export class Lexer {
     protected readOperator(): boolean {
         const a = this.lookahead(0);
 
-        if (Ascii.not.operator(a)) return false;
+        if (not.operator(a)) return false;
 
         const operator = new Lexical.Operator({
             operator: a,
@@ -1110,7 +1116,7 @@ export class Lexer {
     protected readBlank(): boolean {
         const a = this.lookahead(0);
 
-        if (Ascii.not.blank(a)) return false;
+        if (not.blank(a)) return false;
 
         const blank = new Lexical.Blank();
 
@@ -1119,7 +1125,7 @@ export class Lexer {
         while (this.cursor < this.length) {
             const a = this.lookahead(0);
 
-            if (Ascii.is.blank(a)) {
+            if (is.blank(a)) {
                 this.consume(1);
             } else {
                 break;
@@ -1211,9 +1217,9 @@ export class Lexer {
         }
 
         // Byte escape:
-        if (b === C.LOWERCASE_X && Ascii.is.hexadecimal(c) && Ascii.is.hexadecimal(d)) {
+        if (b === C.LOWERCASE_X && is.hexadecimal(c) && is.hexadecimal(d)) {
             const escape = new Lexical.Escape({
-                codepoint: parseInt(Ascii.decode(c) + Ascii.decode(d), 16),
+                codepoint: parseInt(decode(c) + decode(d), 16),
             });
 
             this.advance(escape);
@@ -1223,9 +1229,9 @@ export class Lexer {
         }
 
         // BMP codepoint escape:
-        if (b === C.LOWERCASE_U && Ascii.is.hexadecimal(c) && Ascii.is.hexadecimal(d) && Ascii.is.hexadecimal(e) && Ascii.is.hexadecimal(f)) {
+        if (b === C.LOWERCASE_U && is.hexadecimal(c) && is.hexadecimal(d) && is.hexadecimal(e) && is.hexadecimal(f)) {
             const escape = new Lexical.Escape({
-                codepoint: parseInt(Ascii.decode(c) + Ascii.decode(d) + Ascii.decode(e) + Ascii.decode(f), 16),
+                codepoint: parseInt(decode(c) + decode(d) + decode(e) + decode(f), 16),
             });
 
             this.advance(escape);
@@ -1235,7 +1241,7 @@ export class Lexer {
         }
 
         // Literal digit escape:
-        if (b === C.LOWERCASE_D && Ascii.is.decimal(c)) {
+        if (b === C.LOWERCASE_D && is.decimal(c)) {
             const escape = new Lexical.Escape({
                 codepoint: c,
             });
@@ -1255,9 +1261,9 @@ export class Lexer {
             let focus = d;
             let valid = true;
 
-            while (cursor < this.length && Ascii.is.hexadecimal(focus)) {
+            while (cursor < this.length && is.hexadecimal(focus)) {
                 codepoint <<= 4;
-                codepoint |= Ascii.parse.digit(focus);
+                codepoint |= parse.digit(focus);
 
                 offset++;
                 cursor++;
@@ -1288,7 +1294,7 @@ export class Lexer {
         const a = this.lookahead(0);
         const b = this.lookahead(1);
 
-        if (!this.stdescapes || a !== C.BACKSLASH || Ascii.not.hexadecimal(b)) return false;
+        if (!this.stdescapes || a !== C.BACKSLASH || not.hexadecimal(b)) return false;
 
         let codepoint = 0;
 
@@ -1296,9 +1302,9 @@ export class Lexer {
         let cursor = this.cursor + offset;
         let focus = b;
 
-        while (cursor < this.length && offset <= 6 && Ascii.is.hexadecimal(focus)) {
+        while (cursor < this.length && offset <= 6 && is.hexadecimal(focus)) {
             codepoint <<= 4;
-            codepoint |= Ascii.parse.digit(focus);
+            codepoint |= parse.digit(focus);
 
             offset++;
             cursor++;
@@ -1308,7 +1314,7 @@ export class Lexer {
 
         if (this.crlf(offset)) {
             offset += 2;
-        } else if (Ascii.is.whitespace(focus)) {
+        } else if (is.whitespace(focus)) {
             offset += 1;
         }
 
@@ -1328,7 +1334,7 @@ export class Lexer {
 
         if (a !== C.BACKSLASH) return false;
 
-        if (Ascii.is.newline(b) || this.cursor >= this.maximum) return false;
+        if (is.newline(b) || this.cursor >= this.maximum) return false;
 
         const escape = new Lexical.Escape({
             codepoint: Utf8.value(this.input, this.cursor + 1),
@@ -1357,7 +1363,7 @@ export class Lexer {
 
         if (a !== C.BACKSLASH) return false;
 
-        if (Ascii.not.newline(b) && this.cursor < this.maximum) return false;
+        if (not.newline(b) && this.cursor < this.maximum) return false;
 
         const escape = new Lexical.Escape();
 
@@ -1398,7 +1404,7 @@ export class Lexer {
     protected readIdentifierRaw(): boolean {
         const a = this.lookahead(0);
 
-        if (Ascii.not.idc(a)) return false;
+        if (not.idc(a)) return false;
 
         const raw = new Lexical.Raw();
 
@@ -1407,7 +1413,7 @@ export class Lexer {
         while (this.cursor < this.length) {
             const a = this.lookahead(0);
 
-            if (Ascii.is.idc(a)) {
+            if (is.idc(a)) {
                 this.consume(1);
             } else {
                 break;
@@ -1423,7 +1429,7 @@ export class Lexer {
     protected readHashRaw(): boolean {
         const a = this.lookahead(0);
 
-        if (Ascii.not.idc(a)) return false;
+        if (not.idc(a)) return false;
 
         const raw = new Lexical.Raw();
         const hash = this.frame.parent as Lexical.Hash;
@@ -1433,11 +1439,11 @@ export class Lexer {
         while (this.cursor < this.length) {
             const a = this.lookahead(0);
 
-            if (Ascii.is.idc(a)) {
+            if (is.idc(a)) {
                 this.consume(1);
 
                 if (hash.color !== Lexical.Hash.ColorValidity.Invalid) {
-                    if (Ascii.is.hexadecimal(a)) {
+                    if (is.hexadecimal(a)) {
                         hash.bytes.push(a);
                     } else {
                         hash.color = Lexical.Hash.ColorValidity.Invalid;
