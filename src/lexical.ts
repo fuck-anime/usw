@@ -213,29 +213,7 @@ export namespace Lexical {
     export namespace Quasi {
         export type Child = Group | Operator;
 
-        export type Syntax = `${Prefix | ''}${Prefix | ''}${'{}' | '[]' | '()'}`;
-
-        export const enum Prefix {
-            Exclamation /* */ = '!',
-            Hash /*        */ = '#',
-            $ /*           */ = '$',
-            Percent /*     */ = '%',
-            Ampersand /*   */ = '&',
-            Asterisk /*    */ = '*',
-            Plus /*        */ = '+',
-            Dot /*         */ = '.',
-            Slash /*       */ = '/',
-            Colon /*       */ = ':',
-            AngleL /*      */ = '<',
-            Equals /*      */ = '=',
-            AngleR /*      */ = '>',
-            Question /*    */ = '?',
-            At /*          */ = '@',
-            Caret /*       */ = '^',
-            Pipe /*        */ = '|',
-            Tilde /*       */ = '~',
-            Hyphen /*      */ = '-',
-        }
+        export type Syntax = `${Operator.Character | ''}${Operator.Character | ''}${'{}' | '[]' | '()'}`;
 
         export interface Init extends Mixin.Init {
             readonly children?: Child[] | null;
@@ -267,29 +245,7 @@ export namespace Lexical {
     export namespace Annotation {
         export type Child = Group | Operator;
 
-        export type Syntax = `${Prefix | ''}${Prefix | ''}${'{}' | '[]' | '()'}`;
-
-        export const enum Prefix {
-            Exclamation /* */ = '!',
-            Hash /*        */ = '#',
-            $ /*           */ = '$',
-            Percent /*     */ = '%',
-            Ampersand /*   */ = '&',
-            Asterisk /*    */ = '*',
-            Plus /*        */ = '+',
-            Dot /*         */ = '.',
-            Slash /*       */ = '/',
-            Colon /*       */ = ':',
-            AngleL /*      */ = '<',
-            Equals /*      */ = '=',
-            AngleR /*      */ = '>',
-            Question /*    */ = '?',
-            At /*          */ = '@',
-            Caret /*       */ = '^',
-            Pipe /*        */ = '|',
-            Tilde /*       */ = '~',
-            Hyphen /*      */ = '-',
-        }
+        export type Syntax = `${Operator.Character | ''}${Operator.Character | ''}${'{}' | '[]' | '()'}`;
 
         export const enum Placement {
             Outer,
@@ -533,6 +489,28 @@ export namespace Lexical {
     export namespace Operator {
         export interface Init extends Mixin.Init {
             readonly operator?: Ascii.Operator | null;
+        }
+
+        export const enum Character {
+            EXCLAMATION /* */ = '!',
+            HASH /*        */ = '#',
+            DOLLAR /*      */ = '$',
+            PERCENT /*     */ = '%',
+            AMPERSAND /*   */ = '&',
+            ASTERISK /*    */ = '*',
+            PLUS /*        */ = '+',
+            DOT /*         */ = '.',
+            SLASH /*       */ = '/',
+            COLON /*       */ = ':',
+            ANGLE_L /*     */ = '<',
+            EQUALS /*      */ = '=',
+            ANGLE_R /*     */ = '>',
+            QUESTION /*    */ = '?',
+            AT /*          */ = '@',
+            CARET /*       */ = '^',
+            PIPE /*        */ = '|',
+            TILDE /*       */ = '~',
+            HYPHEN /*      */ = '-',
         }
     }
     // endregion
